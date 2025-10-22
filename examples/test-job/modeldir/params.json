@@ -1,0 +1,9 @@
+{
+  "job_name": "NSG CLI Test Job",
+  "description": "Example job to test NSG CLI submission",
+  "parameters": {
+    "test_mode": true,
+    "iterations": 5,
+    "timeout": 60
+  }
+}
