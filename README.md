@@ -12,6 +12,12 @@ A command-line interface for the [Neuroscience Gateway (NSG)](https://www.nsgpor
 
 ## Installation
 
+### From `crates.io`
+
+```bash
+cargo install nsg-cli
+```
+
 ### Build from source
 
 ```bash
@@ -40,6 +46,7 @@ nsg login
 ```
 
 You'll be prompted for:
+
 - NSG Username
 - NSG Password (hidden input)
 - NSG Application Key
@@ -71,6 +78,7 @@ nsg status <JOB_ID>
 ```
 
 Examples:
+
 ```bash
 nsg status NGBW-JOB-PY_EXPANSE-xxxxx
 nsg status https://nsgr.sdsc.edu:8443/cipresrest/v1/job/username/NGBW-JOB-PY_EXPANSE-xxxxx
@@ -85,11 +93,13 @@ nsg submit <ZIP_FILE> --tool <TOOL_NAME>
 ```
 
 Example:
+
 ```bash
 nsg submit my_analysis.zip --tool PY_EXPANSE
 ```
 
 Available tools:
+
 - `PY_EXPANSE` - Python on EXPANSE (default)
 - `GPU_PY_EXPANSE` - GPU-accelerated Python
 - Other NSG tools as supported
@@ -115,12 +125,14 @@ nsg download <JOB_ID> --output ./my_results
 Authenticate and save credentials.
 
 **Options:**
+
 - `-u, --username <USERNAME>` - NSG username (or prompt)
 - `-p, --password <PASSWORD>` - NSG password (or prompt securely)
 - `-a, --app-key <APP_KEY>` - NSG application key (or prompt)
 - `--no-verify` - Skip connection test
 
 **Example:**
+
 ```bash
 nsg login --username myuser --app-key MY_APP_KEY
 ```
@@ -130,9 +142,11 @@ nsg login --username myuser --app-key MY_APP_KEY
 List all jobs for the authenticated user.
 
 **Options:**
+
 - `--detailed` - Fetch detailed status for each job (slower)
 
 **Example:**
+
 ```bash
 nsg list --detailed
 ```
@@ -142,9 +156,11 @@ nsg list --detailed
 Check status of a specific job.
 
 **Arguments:**
+
 - `<JOB>` - Job URL or Job ID
 
 **Example:**
+
 ```bash
 nsg status NGBW-JOB-PY_EXPANSE-xxxxx
 ```
@@ -154,13 +170,16 @@ nsg status NGBW-JOB-PY_EXPANSE-xxxxx
 Submit a new job to NSG.
 
 **Arguments:**
+
 - `<ZIP_FILE>` - Path to ZIP file containing job data
 
 **Options:**
+
 - `-t, --tool <TOOL>` - NSG tool to use (default: PY_EXPANSE)
 - `--no-wait` - Don't wait for job submission confirmation
 
 **Example:**
+
 ```bash
 nsg submit job_data.zip --tool PY_EXPANSE
 ```
@@ -170,12 +189,15 @@ nsg submit job_data.zip --tool PY_EXPANSE
 Download results from a completed job.
 
 **Arguments:**
+
 - `<JOB>` - Job URL or Job ID
 
 **Options:**
+
 - `-o, --output <DIR>` - Output directory (default: ./nsg_results)
 
 **Example:**
+
 ```bash
 nsg download NGBW-JOB-PY_EXPANSE-xxxxx --output ./results
 ```
@@ -200,6 +222,7 @@ The main script should be named `input.py` for PY_EXPANSE tool.
 Credentials are stored in: `~/.nsg/credentials.json`
 
 **Format:**
+
 ```json
 {
   "username": "your_username",
@@ -209,6 +232,7 @@ Credentials are stored in: `~/.nsg/credentials.json`
 ```
 
 **Security:**
+
 - On Unix systems, the file permissions are set to `0600` (read/write for owner only)
 - Never commit this file to version control
 - Keep your credentials secure
@@ -216,6 +240,7 @@ Credentials are stored in: `~/.nsg/credentials.json`
 ## API Documentation
 
 This CLI interfaces with the NSG REST API:
+
 - **Base URL:** `https://nsgr.sdsc.edu:8443/cipresrest/v1`
 - **Authentication:** HTTP Basic Auth + `cipres-appkey` header
 - **Response format:** XML
@@ -267,6 +292,7 @@ cargo check          # Type checking only (fast)
 ### Authentication Failed
 
 If login fails:
+
 1. Verify credentials at https://www.nsgportal.org/
 2. Check that your NSG account is active
 3. Ensure application key is correct
@@ -275,6 +301,7 @@ If login fails:
 ### Job Not Found
 
 If `status` or `download` can't find a job:
+
 1. Verify job ID is correct
 2. Use `nsg list` to see all your jobs
 3. Try using the full job URL instead of just the ID
@@ -282,6 +309,7 @@ If `status` or `download` can't find a job:
 ### Download Failed
 
 If results download fails:
+
 1. Check job is in COMPLETED stage with `nsg status`
 2. Verify job has results available
 3. Check output directory permissions
