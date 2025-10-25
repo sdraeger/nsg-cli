@@ -1,9 +1,9 @@
+use crate::client::NsgClient;
+use crate::config::Credentials;
 use anyhow::{Context, Result};
 use clap::Args;
 use colored::Colorize;
 use std::path::PathBuf;
-use crate::client::NsgClient;
-use crate::config::Credentials;
 
 #[derive(Debug, Args)]
 pub struct SubmitCommand {
@@ -38,7 +38,10 @@ impl SubmitCommand {
         println!("Tool:     {}", self.tool.bold());
         println!("User:     {}", credentials.username.cyan());
         println!("File:     {}", self.zip_file.display().to_string().cyan());
-        println!("Size:     {} bytes", format_size(std::fs::metadata(&self.zip_file)?.len()));
+        println!(
+            "Size:     {} bytes",
+            format_size(std::fs::metadata(&self.zip_file)?.len())
+        );
         println!();
 
         println!("{} Submitting job to NSG...", "→".yellow().bold());

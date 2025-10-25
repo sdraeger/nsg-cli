@@ -59,24 +59,35 @@ pub fn parse_job_list(xml: &str) -> Result<Vec<JobSummary>> {
             Ok(Event::End(e)) if e.name().as_ref() == b"selfUri" => {
                 in_self_uri = false;
                 if let (Some(url), Some(title)) = (current_url.take(), current_title.take()) {
-                    jobs.push(JobSummary {
-                        job_id: title,
-                        url,
-                    });
+                    jobs.push(JobSummary { job_id: title, url });
                 }
             }
             Ok(Event::Start(e)) if in_self_uri && e.name().as_ref() == b"url" => {
                 if let Ok(Event::Text(t)) = reader.read_event_into(&mut buf) {
-                    current_url = reader.decoder().decode(t.as_ref()).ok().map(|s| s.to_string());
+                    current_url = reader
+                        .decoder()
+                        .decode(t.as_ref())
+                        .ok()
+                        .map(|s| s.to_string());
                 }
             }
             Ok(Event::Start(e)) if in_self_uri && e.name().as_ref() == b"title" => {
                 if let Ok(Event::Text(t)) = reader.read_event_into(&mut buf) {
-                    current_title = reader.decoder().decode(t.as_ref()).ok().map(|s| s.to_string());
+                    current_title = reader
+                        .decoder()
+                        .decode(t.as_ref())
+                        .ok()
+                        .map(|s| s.to_string());
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => return Err(anyhow::anyhow!("XML parse error at position {}: {}", reader.buffer_position(), e)),
+            Err(e) => {
+                return Err(anyhow::anyhow!(
+                    "XML parse error at position {}: {}",
+                    reader.buffer_position(),
+                    e
+                ))
+            }
             _ => {}
         }
         buf.clear();
@@ -139,7 +150,9 @@ pub fn parse_job_status(xml: &str) -> Result<JobStatus> {
                 current_tag.clear();
             }
             Ok(Event::Text(e)) => {
-                let text = reader.decoder().decode(e.as_ref())
+                let text = reader
+                    .decoder()
+                    .decode(e.as_ref())
                     .map(|s| s.to_string())
                     .unwrap_or_default();
                 match current_tag.as_str() {
@@ -205,9 +218,11 @@ pub fn parse_output_files(xml: &str) -> Result<Vec<OutputFile>> {
                 let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
                 match tag.as_str() {
                     "jobfile" => {
-                        if let (Some(filename), Some(download_uri), Some(size)) =
-                            (current_filename.take(), current_download_uri.take(), current_size.take())
-                        {
+                        if let (Some(filename), Some(download_uri), Some(size)) = (
+                            current_filename.take(),
+                            current_download_uri.take(),
+                            current_size.take(),
+                        ) {
                             files.push(OutputFile {
                                 filename,
                                 download_uri,
@@ -222,7 +237,9 @@ pub fn parse_output_files(xml: &str) -> Result<Vec<OutputFile>> {
                 current_tag.clear();
             }
             Ok(Event::Text(e)) => {
-                let text = reader.decoder().decode(e.as_ref())
+                let text = reader
+                    .decoder()
+                    .decode(e.as_ref())
                     .map(|s| s.to_string())
                     .unwrap_or_default();
                 if in_jobfile {

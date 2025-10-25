@@ -1,8 +1,11 @@
 [package]
 name = "nsg-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
-authors = ["Simon Draeger <sdraeger@salk.edu>"]
+authors = [
+	"Simon Draeger <sdraeger@salk.edu>",
+	"Claudia Lainscsek <claudia@salk.edu>",
+]
 description = "CLI tool for the Neuroscience Gateway (NSG) BRAIN Initiative API"
 license = "MIT"
 repository = "https://github.com/sdraeger/nsg-cli"

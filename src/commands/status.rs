@@ -1,8 +1,8 @@
+use crate::client::NsgClient;
+use crate::config::Credentials;
 use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
-use crate::client::NsgClient;
-use crate::config::Credentials;
 
 #[derive(Debug, Args)]
 pub struct StatusCommand {
@@ -59,7 +59,11 @@ impl StatusCommand {
 
             for msg in recent {
                 println!();
-                println!("  [{}] {}", msg.stage.cyan(), msg.timestamp.as_deref().unwrap_or(""));
+                println!(
+                    "  [{}] {}",
+                    msg.stage.cyan(),
+                    msg.timestamp.as_deref().unwrap_or("")
+                );
                 if !msg.text.is_empty() {
                     let text = if msg.text.len() > 200 {
                         format!("{}...", &msg.text[..200])
@@ -103,13 +107,19 @@ fn format_timestamp(ts: &str) -> String {
 fn print_next_action(stage: &str, job_id: &str) {
     match stage {
         "COMPLETED" => {
-            println!("{} Job completed! You can now download results.", "✓".green().bold());
+            println!(
+                "{} Job completed! You can now download results.",
+                "✓".green().bold()
+            );
             println!();
             println!("To download all results:");
             println!("  {}", format!("nsg download {}", job_id).cyan());
         }
         "FAILED" => {
-            println!("{} Job failed. Check messages above for error details.", "✗".red().bold());
+            println!(
+                "{} Job failed. Check messages above for error details.",
+                "✗".red().bold()
+            );
         }
         "QUEUE" | "SUBMITTED" => {
             println!("{} Job is queued. Check again later.", "⏳".yellow());
@@ -118,7 +128,10 @@ fn print_next_action(stage: &str, job_id: &str) {
             println!("  {}", format!("nsg status {}", job_id).cyan());
         }
         "RUN" | "RUNNING" => {
-            println!("{} Job is running. Check back later for completion.", "⟳".yellow());
+            println!(
+                "{} Job is running. Check back later for completion.",
+                "⟳".yellow()
+            );
             println!();
             println!("To check status again:");
             println!("  {}", format!("nsg status {}", job_id).cyan());

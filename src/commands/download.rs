@@ -1,17 +1,22 @@
+use crate::client::NsgClient;
+use crate::config::Credentials;
 use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::PathBuf;
-use crate::client::NsgClient;
-use crate::config::Credentials;
 
 #[derive(Debug, Args)]
 pub struct DownloadCommand {
     #[arg(help = "Job URL or Job ID")]
     job: String,
 
-    #[arg(short, long, default_value = "./nsg_results", help = "Output directory")]
+    #[arg(
+        short,
+        long,
+        default_value = "./nsg_results",
+        help = "Output directory"
+    )]
     output: PathBuf,
 }
 
@@ -48,7 +53,11 @@ impl DownloadCommand {
         }
 
         println!();
-        println!("{} Output directory: {}", "→".cyan(), self.output.display().to_string().bold());
+        println!(
+            "{} Output directory: {}",
+            "→".cyan(),
+            self.output.display().to_string().bold()
+        );
         println!();
 
         if self.output.exists() && std::fs::read_dir(&self.output)?.next().is_some() {
@@ -66,15 +75,29 @@ impl DownloadCommand {
         println!("{} Downloading output files...", "→".yellow().bold());
         println!();
 
-        let pb = ProgressBar::new_spinner();
+        let pb = ProgressBar::new(0);
         pb.set_style(
-            ProgressStyle::default_spinner()
-                .template("{spinner:.cyan} {msg}")
-                .unwrap(),
+            ProgressStyle::default_bar()
+                .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+                .unwrap()
+                .progress_chars("#>-"),
         );
-        pb.set_message("Fetching file list...");
 
-        let downloaded = client.download_results(&self.job, &self.output)?;
+        let mut current_file = String::new();
+
+        let downloaded = client.download_results(
+            &self.job,
+            &self.output,
+            |filename, downloaded_bytes, total_bytes| {
+                if current_file != filename {
+                    current_file = filename.to_string();
+                    pb.set_length(total_bytes);
+                    pb.set_position(0);
+                    pb.set_message(format!("Downloading: {}", filename));
+                }
+                pb.set_position(downloaded_bytes);
+            },
+        )?;
 
         pb.finish_and_clear();
 
@@ -88,13 +111,22 @@ impl DownloadCommand {
             return Ok(());
         }
 
-        println!("{} Downloaded {} file(s):", "✓".green().bold(), downloaded.len());
+        println!(
+            "{} Downloaded {} file(s):",
+            "✓".green().bold(),
+            downloaded.len()
+        );
         println!();
 
         let mut total_size = 0u64;
         for file in &downloaded {
             total_size += file.size;
-            println!("  {} {} ({})", "✓".green(), file.filename.cyan(), format_size(file.size));
+            println!(
+                "  {} {} ({})",
+                "✓".green(),
+                file.filename.cyan(),
+                format_size(file.size)
+            );
         }
 
         println!();

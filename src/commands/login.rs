@@ -1,9 +1,9 @@
+use crate::client::NsgClient;
+use crate::config::Credentials;
 use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
 use std::io::{self, Write};
-use crate::client::NsgClient;
-use crate::config::Credentials;
 
 #[derive(Debug, Args)]
 pub struct LoginCommand {
@@ -54,7 +54,10 @@ impl LoginCommand {
                     eprintln!("  2. Application key is valid");
                     eprintln!("  3. Your NSG account is active");
                     eprintln!();
-                    eprintln!("Get credentials at: {}", "https://www.nsgportal.org/".cyan());
+                    eprintln!(
+                        "Get credentials at: {}",
+                        "https://www.nsgportal.org/".cyan()
+                    );
                     anyhow::bail!("Login failed");
                 }
             }
@@ -64,16 +67,29 @@ impl LoginCommand {
 
         println!();
         println!("{}", "=".repeat(60).green());
-        println!("{} {}", "✓".green().bold(), "Login successful!".green().bold());
+        println!(
+            "{} {}",
+            "✓".green().bold(),
+            "Login successful!".green().bold()
+        );
         println!("{}", "=".repeat(60).green());
         println!();
-        println!("Credentials saved to: {}", Credentials::credentials_location().cyan());
+        println!(
+            "Credentials saved to: {}",
+            Credentials::credentials_location().cyan()
+        );
         println!();
         println!("You can now use:");
         println!("  {} - List your NSG jobs", "nsg list".cyan());
         println!("  {} - Check job status", "nsg status <job_id>".cyan());
-        println!("  {} - Submit a new job", "nsg submit <zip_file> --tool <tool>".cyan());
-        println!("  {} - Download job results", "nsg download <job_id>".cyan());
+        println!(
+            "  {} - Submit a new job",
+            "nsg submit <zip_file> --tool <tool>".cyan()
+        );
+        println!(
+            "  {} - Download job results",
+            "nsg download <job_id>".cyan()
+        );
         println!();
 
         Ok(())

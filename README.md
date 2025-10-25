@@ -2,6 +2,8 @@
 
 A command-line interface for the [Neuroscience Gateway (NSG)](https://www.nsgportal.org/) BRAIN Initiative API.
 
+Authors: Simon Draeger (`sdraeger@salk.edu`) and Claudia Lainscsek (`claudia@salk.edu`)
+
 ## Features
 
 - **Secure credential storage** - Store NSG credentials in `~/.nsg/credentials.json`
@@ -144,11 +146,19 @@ List all jobs for the authenticated user.
 **Options:**
 
 - `--detailed` - Fetch detailed status for each job (slower)
+- `--recent <N>` - Show only the N most recent jobs (default: 20)
+- `--limit <N>` - Limit number of jobs to display
+- `--all` - Show all jobs (override default 20-job limit)
 
-**Example:**
+**Examples:**
 
 ```bash
-nsg list --detailed
+nsg list                    # Show 20 most recent jobs
+nsg list --all              # Show all jobs
+nsg list --recent 5         # Show 5 most recent jobs
+nsg list --limit 10         # Show first 10 jobs
+nsg list --detailed         # Show detailed status for recent jobs
+nsg list --all --detailed   # Show detailed status for ALL jobs (slow if you have many)
 ```
 
 ### `nsg status <JOB>`
@@ -186,7 +196,7 @@ nsg submit job_data.zip --tool PY_EXPANSE
 
 ### `nsg download <JOB>`
 
-Download results from a completed job.
+Download results from a completed job with real-time progress tracking.
 
 **Arguments:**
 
@@ -195,6 +205,12 @@ Download results from a completed job.
 **Options:**
 
 - `-o, --output <DIR>` - Output directory (default: ./nsg_results)
+
+**Features:**
+
+- Real-time progress bar showing download speed and ETA
+- File size display in appropriate units (B, KB, MB, GB)
+- Automatic file size formatting
 
 **Example:**
 

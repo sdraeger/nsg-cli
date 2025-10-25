@@ -1,13 +1,26 @@
+use crate::client::NsgClient;
+use crate::config::Credentials;
 use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
-use crate::client::NsgClient;
-use crate::config::Credentials;
 
 #[derive(Debug, Args)]
 pub struct ListCommand {
     #[arg(long, help = "Fetch detailed status for each job (slower)")]
     detailed: bool,
+
+    #[arg(short, long, help = "Limit number of jobs to display")]
+    limit: Option<usize>,
+
+    #[arg(
+        long,
+        default_value = "20",
+        help = "Show only the N most recent jobs (default: 20, use --recent 0 to show all)"
+    )]
+    recent: usize,
+
+    #[arg(long, help = "Show all jobs (override default limit)")]
+    all: bool,
 }
 
 impl ListCommand {
@@ -18,10 +31,14 @@ impl ListCommand {
         println!("{}", "NSG Job List".bold().cyan());
         println!("{}", "=".repeat(80).cyan());
         println!();
-        println!("{} Fetching jobs for user: {}", "→".cyan(), credentials.username.bold());
+        println!(
+            "{} Fetching jobs for user: {}",
+            "→".cyan(),
+            credentials.username.bold()
+        );
         println!();
 
-        let jobs = client.list_jobs()?;
+        let mut jobs = client.list_jobs()?;
 
         if jobs.is_empty() {
             println!("{}", "No jobs found".yellow());
@@ -31,7 +48,30 @@ impl ListCommand {
             return Ok(());
         }
 
-        println!("Found {} job(s)", jobs.len().to_string().bold());
+        let total_jobs = jobs.len();
+
+        // Apply limit/recent filters
+        if self.all {
+            // Show all jobs, no filtering
+        } else if let Some(limit) = self.limit {
+            // Explicit limit takes precedence
+            jobs.truncate(limit);
+        } else if self.recent > 0 && jobs.len() > self.recent {
+            // Default: show N most recent jobs
+            jobs.drain(0..jobs.len() - self.recent);
+        }
+
+        let showing_jobs = jobs.len();
+
+        if showing_jobs < total_jobs {
+            println!(
+                "Found {} job(s) total, showing {}",
+                total_jobs.to_string().bold(),
+                showing_jobs.to_string().bold()
+            );
+        } else {
+            println!("Found {} job(s)", jobs.len().to_string().bold());
+        }
         println!();
         println!("{}", "=".repeat(80));
 
@@ -57,7 +97,11 @@ impl ListCommand {
 
                         if !status.messages.is_empty() {
                             if let Some(latest) = status.messages.last() {
-                                println!("  Latest: [{}] {}", latest.stage, truncate(&latest.text, 100));
+                                println!(
+                                    "  Latest: [{}] {}",
+                                    latest.stage,
+                                    truncate(&latest.text, 100)
+                                );
                             }
                         }
                     }
@@ -66,7 +110,10 @@ impl ListCommand {
                     }
                 }
             } else {
-                println!("  Status: {} (use --detailed for full status)", "?".dimmed());
+                println!(
+                    "  Status: {} (use --detailed for full status)",
+                    "?".dimmed()
+                );
             }
 
             println!("  URL: {}", job.url.dimmed());
@@ -77,6 +124,15 @@ impl ListCommand {
         println!("{}", "Commands:".bold());
         println!("  Check job status:    {}", "nsg status <JOB_ID>".cyan());
         println!("  Download results:    {}", "nsg download <JOB_ID>".cyan());
+
+        if showing_jobs < total_jobs {
+            println!();
+            println!("{}", "Tip:".bold());
+            println!("  Use {} to see all {} jobs", "--all".cyan(), total_jobs);
+            println!("  Use {} to see detailed status", "--detailed".cyan());
+            println!("  Use {} to limit results", "--limit N".cyan());
+            println!("  Use {} to show N most recent jobs", "--recent N".cyan());
+        }
         println!();
 
         Ok(())

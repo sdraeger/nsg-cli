@@ -1,11 +1,11 @@
-pub mod login;
+pub mod download;
 pub mod list;
+pub mod login;
 pub mod status;
 pub mod submit;
-pub mod download;
 
-pub use login::LoginCommand;
+pub use download::DownloadCommand;
 pub use list::ListCommand;
+pub use login::LoginCommand;
 pub use status::StatusCommand;
 pub use submit::SubmitCommand;
-pub use download::DownloadCommand;
