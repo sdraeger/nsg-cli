@@ -2,15 +2,15 @@
 
 A command-line interface for the [Neuroscience Gateway (NSG)](https://www.nsgportal.org/) BRAIN Initiative API.
 
-Authors: Simon Draeger (`sdraeger@salk.edu`) and Claudia Lainscsek (`claudia@salk.edu`)
-
 ## Features
 
 - **Secure credential storage** - Store NSG credentials in `~/.nsg/credentials.json`
 - **Job management** - Submit, monitor, and download results from NSG HPC jobs
+- **Parallel job fetching** - Fast job listing with concurrent API requests (up to 2x speedup)
 - **Beautiful CLI** - Colored output with progress indicators
 - **XML API support** - Full support for NSG's REST API (XML-based)
 - **Multiple commands** - Login, list, status, submit, and download operations
+- **Flexible compilation** - Feature flags for parallel vs sequential processing
 
 ## Installation
 
@@ -37,6 +37,41 @@ cargo install --path .
 
 This installs the `nsg` binary to `~/.cargo/bin/`.
 
+## Performance
+
+### Parallel Job Fetching
+
+By default, `nsg-cli` uses parallel processing to fetch job details concurrently, significantly improving performance when listing many jobs.
+
+**Benchmark Results (43 jobs):**
+- **Parallel (default)**: ~1.75 seconds
+- **Sequential**: ~3.47 seconds
+- **Speedup**: ~2x faster with parallel processing
+
+### Build Options
+
+```bash
+# Default build with parallel support (recommended)
+cargo build --release
+
+# Build without parallel support (sequential only)
+cargo build --release --no-default-features
+
+# Explicitly enable parallel support
+cargo build --release --features parallel
+```
+
+### When to Use Sequential
+
+Sequential processing may be preferable when:
+- Running on systems with limited CPU resources
+- API rate limiting is a concern
+- You have very few jobs (< 5)
+
+For most users, the default parallel build provides the best performance.
+
+See [BENCHMARKING.md](BENCHMARKING.md) for detailed benchmarking instructions.
+
 ## Quick Start
 
 ### 1. Login
@@ -59,13 +94,20 @@ Your credentials are stored in `~/.nsg/credentials.json` with secure permissions
 
 ### 2. List Jobs
 
-View all your NSG jobs:
+View all your NSG jobs with detailed information (tool, status, dates):
 
 ```bash
 nsg list
 ```
 
-For detailed status of each job (slower):
+The list command automatically fetches detailed information for each job, including:
+- Tool name (e.g., PY_EXPANSE)
+- Job status (COMPLETED, RUNNING, etc.)
+- Submission date
+- Completion date
+- Failed status
+
+For additional job messages:
 
 ```bash
 nsg list --detailed
@@ -141,24 +183,34 @@ nsg login --username myuser --app-key MY_APP_KEY
 
 ### `nsg list`
 
-List all jobs for the authenticated user.
+List all jobs for the authenticated user with detailed information (tool, status, dates).
+
+**Note:** By default, this command fetches detailed status for each job using parallel processing for optimal performance.
 
 **Options:**
 
-- `--detailed` - Fetch detailed status for each job (slower)
+- `--detailed` - Show job messages for each job
 - `--recent <N>` - Show only the N most recent jobs (default: 20)
 - `--limit <N>` - Limit number of jobs to display
 - `--all` - Show all jobs (override default 20-job limit)
 
+**Job Information Displayed:**
+- Job ID
+- Tool name (e.g., PY_EXPANSE)
+- Status (COMPLETED, RUNNING, FAILED, etc.)
+- Submission timestamp
+- Completion timestamp (for terminal jobs)
+- Failed status
+
 **Examples:**
 
 ```bash
-nsg list                    # Show 20 most recent jobs
-nsg list --all              # Show all jobs
+nsg list                    # Show 20 most recent jobs with details
+nsg list --all              # Show all jobs with details
 nsg list --recent 5         # Show 5 most recent jobs
 nsg list --limit 10         # Show first 10 jobs
-nsg list --detailed         # Show detailed status for recent jobs
-nsg list --all --detailed   # Show detailed status for ALL jobs (slow if you have many)
+nsg list --detailed         # Show job messages for recent jobs
+nsg list --all --detailed   # Show all jobs with messages
 ```
 
 ### `nsg status <JOB>`
@@ -293,15 +345,36 @@ nsg-cli/
 - **colored** - Terminal colors
 - **indicatif** - Progress bars
 - **rpassword** - Secure password input
+- **rayon** - Parallel iteration for performance
+- **criterion** - Benchmarking framework (dev dependency)
 
 ### Building
 
 ```bash
-cargo build          # Debug build
-cargo build --release  # Release build (optimized)
-cargo test           # Run tests
-cargo check          # Type checking only (fast)
+cargo build                      # Debug build
+cargo build --release            # Release build with parallel support (optimized)
+cargo build --release --no-default-features  # Sequential build
+cargo test                       # Run tests
+cargo check                      # Type checking only (fast)
+cargo bench                      # Run benchmarks
 ```
+
+### Benchmarking
+
+Compare parallel vs sequential performance:
+
+```bash
+# Benchmark with parallel support (default)
+cargo bench --features parallel
+
+# Benchmark without parallel support
+cargo bench --no-default-features
+
+# View benchmark reports
+open target/criterion/report/index.html
+```
+
+For detailed benchmarking instructions, see [BENCHMARKING.md](BENCHMARKING.md).
 
 ## Troubleshooting
 

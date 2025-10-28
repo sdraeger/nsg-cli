@@ -5,6 +5,9 @@ use reqwest::blocking::{multipart, Client};
 use std::io::{Read, Write};
 use std::path::Path;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 const NSG_BASE_URL: &str = "https://nsgr.sdsc.edu:8443/cipresrest/v1";
 
 pub struct NsgClient {
@@ -81,7 +84,53 @@ impl NsgClient {
         }
 
         let body = response.text()?;
-        parse_job_list(&body)
+        let basic_jobs = parse_job_list(&body)?;
+
+        // Fetch detailed status for each job to populate all fields
+        // Use parallel or sequential iteration based on feature flag
+        let detailed_jobs = self.fetch_job_details(basic_jobs);
+
+        Ok(detailed_jobs)
+    }
+
+    // Helper method to fetch job details with conditional parallel/sequential processing
+    fn fetch_job_details(&self, basic_jobs: Vec<JobSummary>) -> Vec<JobSummary> {
+        #[cfg(feature = "parallel")]
+        {
+            use std::sync::Mutex;
+            let jobs = Mutex::new(Vec::new());
+
+            basic_jobs.par_iter().for_each(|basic_job| {
+                let summary = self.convert_to_detailed_summary(basic_job);
+                jobs.lock().unwrap().push(summary);
+            });
+
+            jobs.into_inner().unwrap()
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        {
+            basic_jobs
+                .into_iter()
+                .map(|basic_job| self.convert_to_detailed_summary(&basic_job))
+                .collect()
+        }
+    }
+
+    // Convert a basic job summary to a detailed one by fetching status
+    fn convert_to_detailed_summary(&self, basic_job: &JobSummary) -> JobSummary {
+        match self.get_job_status(&basic_job.url) {
+            Ok(status) => JobSummary {
+                job_id: status.job_id,
+                url: basic_job.url.clone(),
+                tool: status.tool_id,
+                job_stage: Some(status.job_stage),
+                failed: status.failed,
+                date_submitted: status.date_submitted,
+                date_completed: status.date_completed,
+            },
+            Err(_) => basic_job.clone(),
+        }
     }
 
     pub fn get_job_status(&self, job_url_or_id: &str) -> Result<JobStatus> {

@@ -6,7 +6,7 @@ use colored::Colorize;
 
 #[derive(Debug, Args)]
 pub struct ListCommand {
-    #[arg(long, help = "Fetch detailed status for each job (slower)")]
+    #[arg(long, help = "Show job messages for each job")]
     detailed: bool,
 
     #[arg(short, long, help = "Limit number of jobs to display")]
@@ -78,45 +78,60 @@ impl ListCommand {
         for (i, job) in jobs.iter().enumerate() {
             println!();
             println!("Job #{}", (i + 1).to_string().bold());
-            println!("  ID:  {}", job.job_id.cyan());
+            println!("  ID:        {}", job.job_id.cyan());
 
+            // Display tool name - always show this field
+            match &job.tool {
+                Some(tool) => println!("  Tool:      {}", tool.yellow()),
+                None => println!("  Tool:      {}", "N/A".dimmed()),
+            }
+
+            // Display job stage - always show this field
+            match &job.job_stage {
+                Some(stage) => {
+                    let stage_icon = get_stage_icon(stage);
+                    println!("  Status:    {} {}", stage_icon, stage.bold());
+                }
+                None => println!("  Status:    {}", "Unknown".dimmed()),
+            }
+
+            // Display failed status - always show this field
+            if job.failed {
+                println!("  Failed:    {} YES", "✗".red().bold());
+            } else {
+                println!("  Failed:    {} No", "✓".green());
+            }
+
+            // Display submission date - always show this field
+            match &job.date_submitted {
+                Some(date) => println!("  Submitted: {}", format_timestamp(date)),
+                None => println!("  Submitted: {}", "N/A".dimmed()),
+            }
+
+            // Display completion date - always show this field
+            match &job.date_completed {
+                Some(date) => println!("  Completed: {}", format_timestamp(date).green()),
+                None => println!("  Completed: {}", "Not completed".dimmed()),
+            }
+
+            // The --detailed flag now shows job messages
             if self.detailed {
-                println!("  {}", "Fetching details...".dimmed());
                 match client.get_job_status(&job.url) {
                     Ok(status) => {
-                        let stage_icon = get_stage_icon(&status.job_stage);
-                        println!("  Status: {} {}", stage_icon, status.job_stage.bold());
-
-                        if status.failed {
-                            println!("  Failed: {} YES", "✗".red().bold());
-                        }
-
-                        if let Some(date) = &status.date_submitted {
-                            println!("  Submitted: {}", format_timestamp(date));
-                        }
-
                         if !status.messages.is_empty() {
-                            if let Some(latest) = status.messages.last() {
-                                println!(
-                                    "  Latest: [{}] {}",
-                                    latest.stage,
-                                    truncate(&latest.text, 100)
-                                );
+                            println!("  Messages:");
+                            for msg in &status.messages {
+                                println!("    [{}] {}", msg.stage.cyan(), truncate(&msg.text, 80));
                             }
                         }
                     }
                     Err(_) => {
-                        println!("  Status: {} (failed to fetch)", "?".yellow());
+                        println!("  Messages:  {} (failed to fetch)", "?".yellow());
                     }
                 }
-            } else {
-                println!(
-                    "  Status: {} (use --detailed for full status)",
-                    "?".dimmed()
-                );
             }
 
-            println!("  URL: {}", job.url.dimmed());
+            println!("  URL:       {}", job.url.dimmed());
             println!("{}", "=".repeat(80));
         }
 
@@ -129,7 +144,7 @@ impl ListCommand {
             println!();
             println!("{}", "Tip:".bold());
             println!("  Use {} to see all {} jobs", "--all".cyan(), total_jobs);
-            println!("  Use {} to see detailed status", "--detailed".cyan());
+            println!("  Use {} to see job messages", "--detailed".cyan());
             println!("  Use {} to limit results", "--limit N".cyan());
             println!("  Use {} to show N most recent jobs", "--recent N".cyan());
         }
